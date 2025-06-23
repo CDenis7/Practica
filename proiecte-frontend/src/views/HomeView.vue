@@ -1,9 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-// Presupunem că `api.js` exportă aceste funcții cu nume
-import { getProjects, deleteProject } from '../services/api'; 
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { getProjects } from '../services/api';
+import ProjectCard from '@/components/ProjectCard.vue';
+
+const itemsPerPage = 6; 
+const visibleProjectsCount = ref(itemsPerPage);
 
 const projects = ref([]);
+const route = useRoute();
 
 onMounted(async () => {
   try {
@@ -14,137 +19,144 @@ onMounted(async () => {
   }
 });
 
-const handleDelete = async (projectId) => {
-  if (confirm('Sunteți sigur că doriți să ștergeți acest proiect?')) {
-    try {
-      await deleteProject(projectId);
-      projects.value = projects.value.filter(p => p.id !== projectId);
-    } catch (error) {
-      console.error('Eroare la ștergerea proiectului:', error);
-      alert('Nu s-a putut șterge proiectul.');
-    }
+const filteredProjects = computed(() => {
+  const searchTerm = route.query.search;
+  if (!searchTerm || !searchTerm.trim()) {
+    return projects.value;
   }
-};
+  return projects.value.filter(project => {
+    const term = searchTerm.toLowerCase();
+    const inName = project.name.toLowerCase().includes(term);
+    const inAuthors = project.authors.some(author => 
+      author.name.toLowerCase().includes(term)
+    );
+    return inName || inAuthors;
+  });
+});
+
+
+const projectsToDisplay = computed(() => {
+  return filteredProjects.value.slice(0, visibleProjectsCount.value);
+});
+
+const hasMoreProjects = computed(() => {
+  return visibleProjectsCount.value < filteredProjects.value.length;
+});
+
+
+function loadMore() {
+  visibleProjectsCount.value += itemsPerPage;
+}
+
+watch(() => route.query.search, () => {
+  visibleProjectsCount.value = itemsPerPage;
+});
 </script>
+
 <template>
-  <div class="project-list-container">
+  <div class="home-view-container">
+    <section class="hero-section">
+      <h1 class="hero-title">
+        Descoperă
+        <span>Proiectele</span>
+        realizate de studenții FMI
+      </h1>
+      <p class="hero-subtitle">
+        Navighează, explorează și inspiră-te din miile de ore de muncă, creativitate și inovație.
+      </p>
+    </section>
+
     <h1>Toate Proiectele</h1>
+    
     <div class="project-list">
-      <div v-if="!projects.length">Se încarcă proiectele...</div>
-      <div v-else v-for="project in projects" :key="project.id" class="project-card">
-        <h2>{{ project.name }}</h2>
-        <p class="description">{{ project.description }}</p>
+      <ProjectCard
+        v-for="project in projectsToDisplay"
+        :key="project.id"
+        :project="project"
+      />
+    </div>
 
-        <div class="info-section">
-          <strong>Autori:</strong>
-          <span>{{ project.authors.map(a => a.name).join(', ') }}</span>
-        </div>
-
-        <div class="info-section">
-          <strong>Link-uri Git:</strong>
-          <ul>
-            <li v-for="link in project.links" :key="link.id">
-              <a :href="link.url" target="_blank">{{ link.url }}</a>
-            </li>
-          </ul>
-        </div>
-        
-        <div class="photos">
-          <img v-for="photo in project.photos" :key="photo.id" :src="`data:image/jpeg;base64,${photo.image}`" alt="Project photo" />
-        </div>
-
-        <div class="actions">
-          <button @click="$router.push(`/edit/${project.id}`)" class="btn btn-secondary">Editează</button>
-          <button @click="handleDelete(project.id)" class="btn btn-danger">Șterge</button>
-        </div>
-      </div>
+    <div v-if="hasMoreProjects" class="load-more-container">
+      <button @click="loadMore" class="btn btn-primary btn-load-more">
+        Încarcă mai multe
+      </button>
     </div>
   </div>
 </template>
+
 <style scoped>
-.project-list-container h1 {
+.home-view-container {
+  padding: 0 2rem;
+}
+
+.hero-section {
+  text-align: center;
+  margin-top: 3rem; 
+  margin-bottom: 4rem;
+  padding: 3rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: var(--text-color);
+  margin: 0 auto 1rem auto;
+  max-width: 800px;
+  line-height: 1.2;
+}
+
+.hero-title span {
+  color: #00a1b6;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.home-view-container h1 {
   margin-bottom: 2rem;
   font-weight: 600;
 }
 
 .project-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
+  padding-bottom: 3rem;
 }
 
-.project-card {
-  background-color: var(--card-background-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+.load-more-container {
+  text-align: center;
+  padding-bottom: 3rem;
 }
 
-.project-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transform: translateY(-5px);
+.btn-load-more {
+  padding: 0.8rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 50px;
 }
 
-.project-card h2 {
-  margin-top: 0;
-  font-size: 1.5rem;
-  color: var(--text-color);
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem; 
+  }
+  .hero-subtitle {
+    font-size: 1rem;
+  }
 }
 
-.project-card .description {
-  color: #6c757d;
-  flex-grow: 1; /* Asigură că descrierea umple spațiul disponibil */
-  margin-bottom: 1.5rem;
-}
-
-.info-section {
-  margin-bottom: 1rem;
-}
-
-.info-section strong {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #495057;
-}
-
-.info-section ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.info-section ul li a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.info-section ul li a:hover {
-  text-decoration: underline;
-}
-
-.photos {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-}
-
-.photos img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-}
-
-.actions {
-  margin-top: auto; /* Împinge butoanele la bază */
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  gap: 10px;
+@media (max-width: 576px) {
+  .home-view-container {
+    padding: 0 1rem; 
+  }
+  .hero-title {
+    font-size: 2rem;
+  }
 }
 </style>

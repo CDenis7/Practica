@@ -3,7 +3,7 @@ import HomeView from '../views/HomeView.vue';
 import NewProjectView from '../views/NewProjectView.vue';
 import EditProjectView from '../views/EditProjectView.vue';
 import ProjectDetailView from '../views/ProjectDetailView.vue';
-import LoginView from '../views/LoginView.vue'; // <-- Import LoginView
+import LoginView from '../views/LoginView.vue';
 import { isLoggedIn } from '@/services/authService';
 
 const router = createRouter({
@@ -15,7 +15,7 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/login', // <-- Add Login Route
+      path: '/login',
       name: 'login',
       component: LoginView
     },
@@ -29,25 +29,22 @@ const router = createRouter({
       path: '/new',
       name: 'new-project',
       component: NewProjectView,
-      meta: { requiresAuth: true } // Mark this route as requiring authentication
+      meta: { requiresAuth: true } 
     },
     {
       path: '/edit/:projectId',
       name: 'edit-project',
       component: EditProjectView,
       props: true,
-      meta: { requiresAuth: true } // Mark this route as requiring authentication
+      meta: { requiresAuth: true } 
     }
   ]
 });
 
-// Navigation Guard: Protects routes that require authentication
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !isLoggedIn()) {
-    // If route requires auth and user is not logged in, redirect to login
     next({ name: 'login' });
   } else {
-    // Otherwise, proceed
     next();
   }
 });

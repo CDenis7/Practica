@@ -1,217 +1,145 @@
 <script setup>
 import { RouterLink } from 'vue-router';
+
 defineProps({
   project: {
     type: Object,
     required: true
   }
 });
-const emit = defineEmits(['delete-project', 'open-photo-modal']);
-function onDeleteClick(projectId) {
-  if (window.confirm("Esti sigur ca vrei sa stergi acest proiect?")) {
-    emit('delete-project', projectId);
-  }
-}
-function onPhotoClick(photoUrl) {
-    emit('open-photo-modal', photoUrl);
-}
-function getYouTubeEmbedUrl(url) {
-  if (!url) return '';
-  try {
-    const videoUrl = new URL(url);
-    const videoId = videoUrl.searchParams.get('v');
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
-  } catch (error) {
-    console.error('URL video invalid:', error);
-    return '';
-  }
-  return '';
-}
 </script>
 
 <template>
-  <div class="project-card">
-    <div class="project-details">
-      <h2>{{ project.name }}</h2>
-      <p>{{ project.description }}</p>
-
-      <div v-if="project.authors && project.authors.length > 0">
-        <strong>Autori:</strong>
-        <ul>
-          <li v-for="author in project.authors" :key="author.id">
-            {{ author.name }}
-          </li>
-        </ul>
+  <router-link
+    :to="{ name: 'project-detail', params: { id: project.id } }"
+    class="project-card"
+  >
+    <div class="card-image-container">
+      <img
+        v-if="project.photos && project.photos.length > 0"
+        :src="`data:image/jpeg;base64,${project.photos[0].image}`"
+        :alt="`Imagine pentru proiectul ${project.name}`"
+        class="card-image"
+      />
+      <div v-else class="card-placeholder-background">
+        <span>Fără imagine</span>
       </div>
 
-      <div v-if="project.links && project.links.length > 0">
-        <strong>Link-uri:</strong>
-        <ul>
-          <li v-for="(link, index) in project.links" :key="index">
-            <a :href="link.url" target="_blank" rel="noopener noreferrer">{{ link.url }}</a>
-          </li>
-        </ul>
-      </div>
-
-      <div v-if="project.videoUrl" class="video-container">
-        <strong>Video:</strong>
-        <iframe 
-          :src="getYouTubeEmbedUrl(project.videoUrl)" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen
-        ></iframe>
-      </div>
-      
-      <div class="project-actions">
-        <router-link :to="{ name: 'edit-project', params: { projectId: project.id } }" class="btn-edit">
-          Editeaza
-        </router-link>
-        <button @click="onDeleteClick(project.id)" class="btn-delete">
-          Sterge
-        </button>
+      <div class="card-overlay">
+        <div class="view-details-button">Vezi Detalii</div>
       </div>
     </div>
 
-    <div class="project-photos" v-if="project.photos && project.photos.length > 0"> 
- <img
-  v-for="photo in project.photos"
-  :key="photo.id"
-  :src="`data:image/jpeg;base64,${photo.image}`" 
-  :alt="`Poza pentru ${project.name}`"
-  @click="onPhotoClick(`data:image/jpeg;base64,${photo.image}`)" />
+    <div class="card-content">
+      <h3>{{ project.name }}</h3>
+      <p>{{ project.authors.map(a => a.name).join(', ') }}</p>
     </div>
-    <div class="project-photos-placeholder" v-else>
-        <p>Fara fotografii</p>
-    </div>
-  </div>
+  </router-link>
 </template>
 
 <style scoped>
 .project-card {
   display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  border: 1px solid var(--card-border);
-  background-color: var(--card-background);
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.project-details {
-  flex: 2;
-  display: flex;
   flex-direction: column;
-  flex-grow: 1;
-}
-
-.project-photos {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-content: flex-start;
-}
-
-.project-photos-placeholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color);
-  background-color: var(--background-color);
+  background-color: var(--card-background-color);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  min-height: 120px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.project-details h2 {
-  margin-top: 0;
-  color: var(--primary-accent-color);
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-.project-details strong {
-    display: block;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
+.card-image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background-color: #f0f0f0;
 }
 
-.project-details ul {
-    padding-left: 20px;
-    margin: 0;
-}
-
-.project-photos img {
-  width: 120px;
-  height: 120px;
+.card-image {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.4s ease;
 }
 
-.project-photos img:hover {
+.project-card:hover .card-image {
   transform: scale(1.05);
 }
 
-.project-actions {
-  margin-top: auto;
-  padding-top: 1rem;
-  align-self: flex-start;
-}
-
-.btn-edit {
-  display: inline-block;
-  padding: 10px 15px;
-  background-color: #f0ad4e;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-  transition: background-color 0.3s;
-}
-
-.btn-edit:hover {
-  background-color: #ec971f;
-}
-
-.btn-delete {
-  display: inline-block;
-  padding: 10px 15px;
-  background-color: var(--button-delete-bg);
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  margin-left: 10px;
-  font-family: inherit;
-  font-size: inherit;
-}
-
-.btn-delete:hover {
-  background-color: var(--button-delete-hover);
-}
-
-.video-container {
-  margin-top: 1rem;
-}
-
-.video-container iframe {
+.card-placeholder-background {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 8px;
-  border: 1px solid var(--card-border);
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #e9ecef;
+  color: #6c757d;
 }
-.project-details p {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3; 
+
+.card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.project-card:hover .card-overlay {
+  opacity: 1;
+}
+
+.view-details-button {
+  background-color: white;
+  color: #333;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-weight: bold;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+}
+
+.project-card:hover .view-details-button {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card-content {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.card-content h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+  white-space: nowrap;     
+  overflow: hidden;         
+  text-overflow: ellipsis; 
+}
+
+.card-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+  opacity: 0.9;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 54px;
 }
 </style>

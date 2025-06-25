@@ -1,7 +1,7 @@
 <template>
   <form @submit.prevent="handleSubmit" class="project-form">
     <div class="form-group">
-      <label for="name">Nume Proiect</label>
+      <label for="name">Titlu Proiect</label>
       <input type="text" id="name" v-model="project.name" required />
     </div>
 
@@ -16,9 +16,14 @@
     </div>
     
     <div class="form-group">
-      <label for="authors">Autori</label>
+      <label for="authors">Autori (separati prin virgulă)</label>
       <input type="text" id="authors" v-model="authorNamesString" placeholder="" />
       <p v-if="isProcessingAuthors" class="processing-message">Se procesează autorii...</p>
+    </div>
+
+    <div class="form-group">
+        <label for="tags">Tag-uri (separate prin virgulă)</label>
+        <input type="text" id="tags" v-model="tagNamesString" placeholder="ex: Java, Vue, Spring Boot" />
     </div>
 
     <div class="form-group">
@@ -68,7 +73,9 @@ import {
   uploadPhoto,
   deletePhoto,
   getAuthors,
-  createAuthor
+  createAuthor,
+  getTags,
+  createTag
 } from '@/services/api';
 
 const props = defineProps({
@@ -81,9 +88,10 @@ const props = defineProps({
 const router = useRouter();
 const isEditing = !!props.projectId;
 const isSubmitting = ref(false);
-
 const isProcessingAuthors = ref(false); 
 const authorNamesString = ref('');
+const tagNamesString = ref('');
+const allTags = ref([]);
 
 const project = ref({
   name: '',
@@ -91,23 +99,22 @@ const project = ref({
   videoUrl: '',
   authors: [],
   links: [{ url: '' }],
-  photos: []
+  photos: [],
+  tags: [] 
 });
 
 const allAuthors = ref([]); 
 const newPhotos = ref([]); 
+
 const addLink = () => {
   project.value.links.push({ url: '' });
 };
-
 const removeLink = (index) => {
   project.value.links.splice(index, 1);
 };
-
 const handleFileSelect = (event) => {
   const files = Array.from(event.target.files);
   if (!files) return;
-
   for (const file of files) {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -120,11 +127,9 @@ const handleFileSelect = (event) => {
   }
   event.target.value = '';
 };
-
 const removeNewPhoto = (index) => {
   newPhotos.value.splice(index, 1);
 };
-
 const handleDeleteExistingPhoto = async (photoId, index) => {
   if (confirm("Ești sigur că vrei să ștergi această fotografie?")) {
     try {
@@ -136,7 +141,6 @@ const handleDeleteExistingPhoto = async (photoId, index) => {
     }
   }
 };
-
 const uploadNewPhotos = async (targetProjectId) => {
     if (newPhotos.value.length === 0) return;
     const uploadPromises = newPhotos.value.map(photo => {
@@ -148,10 +152,11 @@ const uploadNewPhotos = async (targetProjectId) => {
 
 onMounted(async () => {
   try {
-    const response = await getAuthors();
-    allAuthors.value = response.data;
+    const [authorsRes, tagsRes] = await Promise.all([getAuthors(), getTags()]);
+    allAuthors.value = authorsRes.data;
+    allTags.value = tagsRes.data;
   } catch (error) {
-    console.error("Eroare la încărcarea listei de autori:", error);
+    console.error("Eroare la încărcarea datelor inițiale:", error);
   }
 
   if (isEditing) {
@@ -161,6 +166,9 @@ onMounted(async () => {
       if (project.value.authors && project.value.authors.length > 0) {
         authorNamesString.value = project.value.authors.map(author => author.name).join(', ');
       }
+      if (project.value.tags && project.value.tags.length > 0) {
+        tagNamesString.value = project.value.tags.map(tag => tag.name).join(', ');
+      }
       if (!project.value.links || project.value.links.length === 0) {
         project.value.links = [{ url: '' }];
       }
@@ -169,21 +177,14 @@ onMounted(async () => {
     }
   }
 });
+
 const processAuthorNames = async () => {
   isProcessingAuthors.value = true;
   const finalAuthorObjects = [];
-  
-  const names = authorNamesString.value
-    .split(',')
-    .map(name => name.trim())
-    .filter(name => name.length > 0);
-
+  const names = authorNamesString.value.split(',').map(name => name.trim()).filter(Boolean);
   for (const name of names) {
     try {
-      let existingAuthor = allAuthors.value.find(
-        author => author.name.toLowerCase() === name.toLowerCase()
-      );
-
+      let existingAuthor = allAuthors.value.find(author => author.name.toLowerCase() === name.toLowerCase());
       if (existingAuthor) {
         finalAuthorObjects.push(existingAuthor);
       } else {
@@ -199,16 +200,42 @@ const processAuthorNames = async () => {
       return null;
     }
   }
-
   isProcessingAuthors.value = false;
   return finalAuthorObjects;
 };
+
+const processTagNames = async () => {
+  const finalTagObjects = [];
+  const names = tagNamesString.value.split(',').map(name => name.trim()).filter(Boolean);
+  for (const name of names) {
+    try {
+      let existingTag = allTags.value.find(tag => tag.name.toLowerCase() === name.toLowerCase());
+      if (existingTag) {
+        finalTagObjects.push(existingTag);
+      } else {
+        const newTagResponse = await createTag({ name: name });
+        const newTag = newTagResponse.data;
+        finalTagObjects.push(newTag);
+        allTags.value.push(newTag);
+      }
+    } catch (error) {
+      console.error(`Eroare la procesarea tag-ului "${name}":`, error);
+      alert(`Eroare la procesarea tag-ului: ${name}`);
+      return null;
+    }
+  }
+  return finalTagObjects;
+};
+
 const handleSubmit = async () => {
   isSubmitting.value = true;
+  
+  const [processedAuthors, processedTags] = await Promise.all([
+    processAuthorNames(),
+    processTagNames()
+  ]);
 
-  const processedAuthors = await processAuthorNames();
-
-  if (processedAuthors === null) {
+  if (processedAuthors === null || processedTags === null) {
     isSubmitting.value = false;
     return; 
   }
@@ -216,6 +243,7 @@ const handleSubmit = async () => {
   const payload = {
     ...project.value,
     authors: processedAuthors,
+    tags: processedTags, 
     links: project.value.links.filter(link => link.url)
   };
 

@@ -7,6 +7,28 @@ defineProps({
     required: true
   }
 });
+
+/**
+ * Generează un stil de fundal determinist pentru un tag.
+ * @param {string} tagName Numele tag-ului.
+ * @returns {object} Un obiect de stil pentru Vue.
+ */
+function getTagStyle(tagName) {
+  // Creează un hash numeric simplu din numele tag-ului
+  let hash = 0;
+  for (let i = 0; i < tagName.length; i++) {
+    hash = tagName.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash; // Asigură un număr întreg pe 32 de biți
+  }
+  // Generează o nuanță (hue) între 0 și 360
+  const hue = hash % 360;
+  
+  // Returnează un obiect de stil cu culoarea de fundal și text alb
+  return {
+    backgroundColor: `hsl(${hue}, 60%, 45%)`,
+    color: '#FFFFFF'
+  };
+}
 </script>
 
 <template>
@@ -24,15 +46,24 @@ defineProps({
       <div v-else class="card-placeholder-background">
         <span>Fără imagine</span>
       </div>
-
       <div class="card-overlay">
         <div class="view-details-button">Vezi Detalii</div>
       </div>
     </div>
-
     <div class="card-content">
       <h3>{{ project.name }}</h3>
       <p>{{ project.authors.map(a => a.name).join(', ') }}</p>
+      
+      <div class="card-tags" v-if="project.tags && project.tags.length > 0">
+        <span 
+          v-for="tag in project.tags" 
+          :key="tag.id" 
+          class="tag-badge"
+          :style="getTagStyle(tag.name)"
+        >
+          {{ tag.name }}
+        </span>
+      </div>
     </div>
   </router-link>
 </template>
@@ -128,7 +159,7 @@ defineProps({
   margin: 0 0 0.25rem 0;
   font-size: 1.1rem;
   color: var(--text-color);
-  white-space: nowrap;     
+  white-space: nowrap;      
   overflow: hidden;         
   text-overflow: ellipsis; 
 }
@@ -136,10 +167,28 @@ defineProps({
 .card-content p {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--secondary-color);
+  color: var(--secondary-text-color);
   opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.card-tags {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    overflow: hidden;
+    max-height: 24px;
+}
+
+.tag-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 50px;
+  line-height: 1.2;
 }
 </style>

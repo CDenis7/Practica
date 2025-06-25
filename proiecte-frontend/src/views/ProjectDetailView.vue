@@ -2,12 +2,9 @@
   <div class="project-detail-page">
     <div v-if="loading" class="loading">Se încarcă detaliile...</div>
     <div v-if="error" class="error">{{ error }}</div>
-    
     <div v-if="project">
       <h1 class="project-title">{{ project.name }}</h1>
-
       <div class="detail-layout">
-
         <div class="media-column">
           
           <div class="main-media-viewer">
@@ -69,6 +66,21 @@
                 {{ author.name }}
               </li>
             </ul>
+          </div>
+
+          <div class="details-box" v-if="project.tags && project.tags.length > 0">
+            <h3>Tag-uri</h3>
+            <div class="tags-list">
+                <!-- Aplicăm stilul dinamic aici -->
+                <span 
+                  v-for="tag in project.tags" 
+                  :key="tag.id" 
+                  class="tag-badge"
+                  :style="getTagStyle(tag.name)"
+                >
+                    {{ tag.name }}
+                </span>
+            </div>
           </div>
           
           <div class="details-box" v-if="project.links && project.links.length > 0 && project.links[0].url">
@@ -132,7 +144,18 @@ watch(project, (newProject) => {
     }
   }
 });
-
+function getTagStyle(tagName) {
+  let hash = 0;
+  for (let i = 0; i < tagName.length; i++) {
+    hash = tagName.charCodeAt(i) + ((hash << 5) - hash);
+    hash = hash & hash;
+  }
+  const hue = hash % 360;
+  return {
+    backgroundColor: `hsl(${hue}, 60%, 45%)`,
+    color: '#FFFFFF'
+  };
+}
 async function setActiveMedia(type, index = 0) {
   activeMedia.value = type;
   if (type === 'photo') {
@@ -191,12 +214,13 @@ function getYouTubeEmbedUrl(url) {
 }
 
 .project-title {
+  margin-top: 0;
+  padding-top: 0;
   margin-bottom: 2rem;
-  padding-top: 2rem;
+  padding-bottom: 0.5rem;
   font-size: 2.5rem;
   font-weight: 700;
   border-bottom: 2px solid var(--primary-color);
-  padding-bottom: 0.5rem;
   color: var(--text-color);
 }
 
@@ -372,6 +396,7 @@ function getYouTubeEmbedUrl(url) {
   gap: 1rem;
   margin-top: 1rem;
 }
+
 @media (max-width: 992px) {
   .detail-layout {
     grid-template-columns: 1fr; 
@@ -396,5 +421,18 @@ function getYouTubeEmbedUrl(url) {
     width: 90px;
     height: 50.625px;
   }
+}
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem; /* Spațiere consistentă */
+}
+/* Stil de bază pentru tag-uri în această componentă */
+.tag-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 50px;
 }
 </style>

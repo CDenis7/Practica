@@ -4,7 +4,7 @@
       <div class="welcome-content">
         <img src="/LogoFMI.jpg" alt="Logo FMI" class="welcome-logo">
         <h1>Bun venit!</h1>
-        <p>Autentifică-te pentru a administra proiectele realizate de studenții Facultății de Matematică și Informatică.</p>
+        <p>Autentifică-te pentru a administra proiectele realizate de studenții Facultății de Informatică.</p>
       </div>
     </div>
 
@@ -47,7 +47,7 @@ async function handleLogin() {
   try {
     const success = await login(username.value, password.value);
     if (success) {
-      router.push('/'); // Redirect to home page after successful login
+      router.push('/'); 
     }
   } catch (err) {
     error.value = 'Autentificare eșuată. Verifică credențialele.';

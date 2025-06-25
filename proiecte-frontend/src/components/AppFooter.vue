@@ -3,7 +3,6 @@
     <div class="footer-content-wrapper">
       <div class="footer-left">
         <div class="footer-text">
-          <p class="site-name">Proiecte FMI</p>
           <p class="site-description">O platformă dedicată prezentării muncii și creativității studenților.</p>
         </div>
       </div>
@@ -16,7 +15,6 @@
 
 <script setup>
 import { computed } from 'vue';
-
 const currentYear = computed(() => new Date().getFullYear());
 </script>
 
@@ -25,7 +23,7 @@ const currentYear = computed(() => new Date().getFullYear());
   padding: 2rem;
   background-color: var(--card-background-color);
   border-top: 1px solid var(--border-color);
-  color: var(--secondary-color);
+  color: var(--secondary-text-color);
   margin-top: auto;
 }
 
@@ -35,7 +33,7 @@ const currentYear = computed(() => new Date().getFullYear());
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   gap: 1.5rem;
 }
 
@@ -55,14 +53,8 @@ const currentYear = computed(() => new Date().getFullYear());
   line-height: 1.4;
 }
 
-.site-name {
-  font-weight: 600;
-  color: var(--text-color);
-  font-size: 1rem;
-}
-
 .site-description {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .copyright {
@@ -72,10 +64,11 @@ const currentYear = computed(() => new Date().getFullYear());
 
 @media (max-width: 768px) {
   .footer-content-wrapper {
-    flex-direction: column; 
-    text-align: center; 
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
   }
-  .copyright {
+  .footer-right {
     text-align: center;
   }
 }
